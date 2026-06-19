@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LMS Course Content</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: 24px;
+      margin-top: 0;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+    }
+    p {
+      line-height: 1.6;
+      color: #475569;
+    }
+    .meta {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .button {
+      display: block;
+      width: 100%;
+      background-color: #208AEF;
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: background-color 0.2s;
+    }
+    .button:active {
+      background-color: #1a73c7;
+    }
+    .button.success {
+      background-color: #10b981;
+    }
+    .info-box {
+      background-color: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+    .info-title {
+      font-weight: bold;
+      color: #1e40af;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="course-title">Loading Course Content...</h1>
+    <div class="meta" id="course-meta">Instructor: Loading...</div>
+    
+    <div class="info-box">
+      <div class="info-title">WebView Communication Channel</div>
+      <p style="margin: 0; font-size: 13px;" id="channel-info">Waiting for Native context headers...</p>
+    </div>
+
+    <h2>Module 1: Getting Started</h2>
+    <p>
+      In this initial module, you will learn the foundational concepts of the course, understand the core learning objectives, and set up your development workspace.
+    </p>
+
+    <h2>Module 2: Core Concepts</h2>
+    <p>
+      We will dive deep into state architecture, asynchronous events flow, data persistence mechanisms, and advanced logic flows.
+    </p>
+    
+    <button class="button" id="complete-btn" onclick="completeCourse()">Mark Module as Completed</button>
+  </div>
+
+  <script>
+    // 1. Receive messages from Native App
+    window.addEventListener('message', function(event) {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'INIT_COURSE') {
+          document.getElementById('course-title').innerText = data.title;
+          document.getElementById('course-meta').innerText = 'Instructor: ' + data.instructor;
+          document.getElementById('channel-info').innerText = 'Connected! Received Course ID: ' + data.courseId;
+        }
+      } catch (err) {
+        console.error('Error parsing native message', err);
+      }
+    });
+
+    // Fallback for direct JS injection
+    function initCourseFallback(title, instructor, courseId) {
+      document.getElementById('course-title').innerText = title;
+      document.getElementById('course-meta').innerText = 'Instructor: ' + instructor;
+      document.getElementById('channel-info').innerText = 'Connected! Injected Course ID: ' + courseId;
+    }
+
+    // 2. Send messages back to Native App
+    function completeCourse() {
+      const btn = document.getElementById('complete-btn');
+      btn.innerText = 'Completed ✔';
+      btn.className = 'button success';
+      btn.disabled = true;
+
+      // Post message back to React Native WebView onMessage
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'COURSE_COMPLETED',
+          timestamp: new Date().toISOString()
+        }));
+      } else {
+        alert('Module completed! (Ran outside React Native context)');
+      }
+    }
+  </script>
+</body>
+</html>

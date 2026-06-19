@@ -1,98 +1,212 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { LegendList } from '@legendapp/list/react-native';
+import { Search, BookOpen, AlertCircle } from 'lucide-react-native';
+import { useAuth } from '../context/AuthContext';
+import { useCourses, Course } from '../context/CourseContext';
+import { CourseCard } from '../components/CourseCard';
+import { Colors } from '../constants/theme';
+import { useColorScheme } from 'react-native';
 
 export default function HomeScreen() {
+  const { user } = useAuth();
+  const { courses, bookmarks, toggleBookmark, isLoading, isRefreshing, error, fetchCourses } = useCourses();
+  const scheme = useColorScheme();
+  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filtering courses based on search query
+  const filteredCourses = useMemo(() => {
+    if (!searchQuery.trim()) return courses;
+    const q = searchQuery.toLowerCase().trim();
+    return courses.filter(
+      (c) => c.title.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)
+    );
+  }, [courses, searchQuery]);
+
+  const handleRefresh = useCallback(() => {
+    fetchCourses(true);
+  }, [fetchCourses]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Course }) => {
+      const isBookmarked = bookmarks.includes(item.id);
+      return (
+        <CourseCard
+          course={item}
+          isBookmarked={isBookmarked}
+          onToggleBookmark={toggleBookmark}
+        />
+      );
+    },
+    [bookmarks, toggleBookmark]
+  );
+
+  const keyExtractor = useCallback((item: Course) => item.id.toString(), []);
+
+  const isDark = scheme === 'dark';
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={styles.content}>
+        {/* Welcome Section */}
+        <View style={styles.header}>
+          <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>
+            Welcome back,
+          </Text>
+          <Text style={[styles.nameText, { color: colors.text }]}>
+            {user?.username || 'Learner'} 👋
+          </Text>
+        </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+        {/* Search Bar */}
+        <View style={[styles.searchContainer, { backgroundColor: colors.backgroundElement }]}>
+          <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search courses..."
+            placeholderTextColor={isDark ? '#666' : '#a0aec0'}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCorrect={false}
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        </View>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        {/* Error Alert */}
+        {error && !isLoading && (
+          <View style={styles.errorBanner}>
+            <AlertCircle size={18} color="#c53030" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {/* List Content */}
+        {isLoading && !isRefreshing ? (
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color="#208AEF" />
+            <Text style={[styles.loaderText, { color: colors.textSecondary }]}>
+              Loading courses...
+            </Text>
+          </View>
+        ) : (
+          <LegendList
+            data={filteredCourses}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            recycleItems={true}
+            contentContainerStyle={styles.listContent}
+            estimatedItemSize={300}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+                colors={['#208AEF']}
+                tintColor="#208AEF"
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <BookOpen size={48} color={colors.textSecondary} style={styles.emptyIcon} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                  No Courses Found
+                </Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                  {searchQuery ? 'Try searching with different keywords.' : 'Pull down to refresh course catalog.'}
+                </Text>
+              </View>
+            }
+          />
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  header: {
+    marginTop: 8,
+  },
+  welcomeText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  nameText: {
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  searchContainer: {
     flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    height: 52,
+    borderRadius: 16,
+    paddingHorizontal: 16,
   },
-  heroSection: {
+  searchIcon: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    height: '100%',
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff5f5',
+    borderWidth: 1,
+    borderColor: '#fed7d7',
+    padding: 12,
+    borderRadius: 14,
+    gap: 8,
+  },
+  errorText: {
+    color: '#c53030',
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
+  listContent: {
+    paddingBottom: 24,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loaderText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    paddingVertical: 64,
+    gap: 8,
   },
-  title: {
+  emptyIcon: {
+    marginBottom: 8,
+    opacity: 0.6,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  emptySubtitle: {
+    fontSize: 14,
     textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    paddingHorizontal: 32,
   },
 });
