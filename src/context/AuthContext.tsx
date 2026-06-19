@@ -132,9 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedUser = await apiRequest<User>('/users/avatar', {
         method: 'PATCH',
         body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
       });
 
       setUser(updatedUser);

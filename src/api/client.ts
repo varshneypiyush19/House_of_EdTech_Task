@@ -112,6 +112,73 @@ async function refreshAuthTokens(): Promise<string> {
   return json.data.accessToken;
 }
 
+interface XhrResponse {
+  status: number;
+  headers: {
+    get: (name: string) => string | null;
+  };
+  ok: boolean;
+  json: () => Promise<any>;
+}
+
+function xhrFetch(url: string, options: any): Promise<XhrResponse> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(options.method || 'GET', url);
+
+    if (options.signal) {
+      options.signal.addEventListener('abort', () => {
+        xhr.abort();
+      });
+    }
+
+    if (options.headers) {
+      const headers = options.headers instanceof Headers ? options.headers : new Headers(options.headers);
+      headers.forEach((value: string, key: string) => {
+        // Do not set Content-Type manually for FormData so that XHR sets boundary automatically
+        if (key.toLowerCase() !== 'content-type') {
+          xhr.setRequestHeader(key, value);
+        }
+      });
+    }
+
+    xhr.onload = () => {
+      const headersMap = new Map<string, string>();
+      const rawHeaders = xhr.getAllResponseHeaders();
+      rawHeaders.split('\r\n').forEach((line) => {
+        const parts = line.split(': ');
+        const key = parts[0]?.toLowerCase();
+        const val = parts.slice(1).join(': ');
+        if (key) {
+          headersMap.set(key, val);
+        }
+      });
+
+      const responseObj: XhrResponse = {
+        status: xhr.status,
+        headers: {
+          get: (name: string) => headersMap.get(name.toLowerCase()) || null,
+        },
+        ok: xhr.status >= 200 && xhr.status < 300,
+        json: async () => {
+          return JSON.parse(xhr.responseText);
+        },
+      };
+      resolve(responseObj);
+    };
+
+    xhr.onerror = () => {
+      reject(new TypeError('Network request failed'));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error('Request timed out'));
+    };
+
+    xhr.send(options.body);
+  });
+}
+
 interface RequestOptions extends RequestInit {
   timeout?: number;
   skipAuth?: boolean;
@@ -134,7 +201,8 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
     const id = setTimeout(() => controller.abort(), timeout);
 
     const headers = new Headers(fetchOptions.headers);
-    if (!headers.has('Content-Type')) {
+    const isFormData = fetchOptions.body instanceof FormData;
+    if (!headers.has('Content-Type') && !isFormData) {
       headers.set('Content-Type', 'application/json');
     }
 
@@ -146,8 +214,15 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       }
     }
 
+    const doFetch = (url: string, initOptions: any) => {
+      if (isFormData) {
+        return xhrFetch(url, initOptions);
+      }
+      return fetch(url, initOptions);
+    };
+
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      const response = await doFetch(`${BASE_URL}${endpoint}`, {
         ...fetchOptions,
         headers,
         signal: controller.signal,
@@ -181,7 +256,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
           headers.set('Authorization', `Bearer ${freshToken}`);
           
           // Re-execute request with new token
-          const retryResponse = await fetch(`${BASE_URL}${endpoint}`, {
+          const retryResponse = await doFetch(`${BASE_URL}${endpoint}`, {
             ...fetchOptions,
             headers,
           });
