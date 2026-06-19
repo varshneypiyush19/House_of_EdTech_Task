@@ -59,6 +59,18 @@ interface CourseContextType {
   isEnrolled: (courseId: number) => boolean;
 }
 
+function rewriteDummyJsonUrl(url: string, category: string, title: string): string {
+  if (url && url.includes('dummyjson.com')) {
+    if (url.includes('product-images/') || url.includes('data/products/')) {
+      const titleEncoded = encodeURIComponent(title);
+      const match = url.match(/\/([^\/]+)\.(jpg|png|jpeg|webp)$/i);
+      const filename = match ? match[1] : 'thumbnail';
+      return `https://cdn.dummyjson.com/products/images/${category}/${titleEncoded}/${filename}.png`;
+    }
+  }
+  return url;
+}
+
 const CourseContext = createContext<CourseContextType | undefined>(undefined);
 
 const COURSES_CACHE_KEY = 'courses_cache';
@@ -181,14 +193,19 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
           },
         };
 
+        const thumbnail = rewriteDummyJsonUrl(product.thumbnail, product.category, product.title);
+        const images = (product.images || []).map((img) => 
+          rewriteDummyJsonUrl(img, product.category, product.title)
+        );
+
         return {
           id: product.id,
           title: product.title,
           description: product.description,
           price: product.price,
           rating: product.rating,
-          thumbnail: product.thumbnail,
-          images: product.images,
+          thumbnail,
+          images,
           brand: product.brand,
           category: product.category,
           instructor,
