@@ -3,10 +3,10 @@ import { View, Text, TextInput, StyleSheet, ActivityIndicator, RefreshControl } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LegendList } from '@legendapp/list/react-native';
 import { Search, BookOpen, AlertCircle } from 'lucide-react-native';
-import { useAuth } from '../context/AuthContext';
-import { useCourses, Course } from '../context/CourseContext';
-import { CourseCard } from '../components/CourseCard';
-import { Colors } from '../constants/theme';
+import { useAuth } from '../../context/AuthContext';
+import { useCourses, Course } from '../../context/CourseContext';
+import { CourseCard } from '../../components/CourseCard';
+import { Colors } from '../../constants/theme';
 import { useColorScheme } from 'react-native';
 
 export default function HomeScreen() {

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { useColorScheme, View, ActivityIndicator, StyleSheet } from 'react-native';
+import { Stack } from 'expo-router';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { CourseProvider } from '@/context/CourseContext';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 import LoginScreen from '@/app/login';
 import RegisterScreen from '@/app/register';
 import OfflineBanner from '@/components/OfflineBanner';
@@ -30,11 +30,11 @@ function RootLayoutContent() {
       <OfflineBanner />
       <AnimatedSplashOverlay />
       
-      {/* 
-        AppTabs is always mounted to register Expo Router's navigation tree.
-        When not authenticated, it is completely covered by the absolute overlay below.
-      */}
-      <AppTabs />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="course/[id]" />
+        <Stack.Screen name="webview" />
+      </Stack>
 
       {!isAuthenticated && (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: themeValue.colors.background, zIndex: 999 }]}>
@@ -58,4 +58,3 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
-

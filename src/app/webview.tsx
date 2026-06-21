@@ -96,13 +96,19 @@ export default function CourseWebViewScreen() {
         try {
           const fileUri = assets[0].localUri || assets[0].uri;
           if (fileUri) {
-            const content = await FileSystem.readAsStringAsync(fileUri);
+            let content;
+            if (fileUri.startsWith('http://') || fileUri.startsWith('https://')) {
+              const response = await fetch(fileUri);
+              content = await response.text();
+            } else {
+              content = await FileSystem.readAsStringAsync(fileUri);
+            }
             setHtmlContent(content);
           } else {
             setHtmlContent(FALLBACK_HTML);
           }
         } catch (err) {
-          console.warn('Failed to read local HTML asset from filesystem, using fallback HTML', err);
+          console.warn('Failed to read local HTML asset, using fallback HTML', err);
           setHtmlContent(FALLBACK_HTML);
         }
       } else if (errorAssets) {
@@ -170,7 +176,8 @@ export default function CourseWebViewScreen() {
         <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
           {title || 'Course Content'}
         </Text>
-        <View style={{ width: 40 }} /> {/* Spacer */}
+        {/* Spacer */}
+        <View style={{ width: 40 }} />
       </View>
 
       {/* WebView Content Area */}

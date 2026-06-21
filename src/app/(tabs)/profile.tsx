@@ -3,11 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
-import { useCourses } from '../context/CourseContext';
-import { Colors } from '../constants/theme';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LogOut, BookOpen, Bookmark, Camera, ChevronRight, User as UserIcon, Settings, Bell, Shield, Award, AwardIcon, Compass } from 'lucide-react-native';
+import { useAuth } from '../../context/AuthContext';
+import { useCourses } from '../../context/CourseContext';
+import { Colors } from '../../constants/theme';
+import { LogOut, Camera, ChevronRight, User as UserIcon, Settings, Bell, Shield, Award, AwardIcon, Compass } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const { user, logout, updateAvatar } = useAuth();

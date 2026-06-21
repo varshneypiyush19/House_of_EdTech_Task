@@ -3,9 +3,9 @@ import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LegendList } from '@legendapp/list/react-native';
 import { Search, Bookmark } from 'lucide-react-native';
-import { useCourses, Course } from '../context/CourseContext';
-import { CourseCard } from '../components/CourseCard';
-import { Colors } from '../constants/theme';
+import { useCourses, Course } from '../../context/CourseContext';
+import { CourseCard } from '../../components/CourseCard';
+import { Colors } from '../../constants/theme';
 import { useColorScheme } from 'react-native';
 
 export default function BookmarksScreen() {
