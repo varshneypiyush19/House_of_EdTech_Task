@@ -1,116 +1,133 @@
-# Mini LMS Mobile App (Expo SDK 56)
+# 🎓 Mini LMS Mobile Application (Expo SDK 56)
 
-A high-performance, secure Mini LMS Mobile Application built using **React Native Expo (SDK 56)**, **TypeScript**, **NativeWind (v5/Tailwind v4)**, and **LegendList**.
-
----
-
-## 🚀 Key Features
-
-*   **Secure Authentication:** User register & login integrated with `api.freeapi.app` endpoints. JWT access and refresh tokens are stored securely using `expo-secure-store` with auto-login on startup.
-*   **Highly Optimized Catalog Listing:** Built with `@legendapp/list/react-native` (`LegendList`) for cell recycling, memoized layouts, and dynamic item sizing. Features pull-to-refresh and search filtering.
-*   **State Persistence & Offline Banner:** Local persistence via `AsyncStorage` caches courses and bookmark configurations. A custom `OfflineBanner` alerts the user when network connectivity changes using `@react-native-community/netinfo`.
-*   **WebView Integration:** Embedded course module player utilizing `react-native-webview` with dynamic parameter injection, simulating custom authorization headers, and bidirectional messaging (notifies native when course module is completed).
-*   **Local Notifications:** Schedules user alerts on SDK 56 using `expo-notifications` for:
-    *   Reaching 5+ bookmarked courses.
-    *   24-hour inactivity reminder (reschedules dynamically upon opening).
-*   **Profile Management:** User statistics dashboard showing bookmarks & enrollment counts, with avatar image picker updates (`expo-image-picker`).
+A high-performance, resilient, and visually premium Mini Learning Management System (LMS) mobile application. Built using **React Native Expo (SDK 56)**, **TypeScript**, **NativeWind (v5 / Tailwind v4)**, and **LegendList** for ultra-smooth list recycling.
 
 ---
 
-## 🛠️ Architectural Decisions
+## 📱 App Screens & Navigation Flows
 
-1.  **Expo SDK 56 + NativeWind v5 (Tailwind v4):** To support SDK 56, we configured NativeWind v5 (preview), setting up `metro.config.js` and `postcss.config.mjs` to work directly with Tailwind CSS v4's newer compiler.
-2.  **LegendList for Dynamic Lists:** Rather than relying on default FlatList (which causes frame drops on heavy layouts), we integrated `LegendList`, which uses view recycling to maintain smooth 60 FPS scrolls.
-3.  **Local HTML Asset for WebView:** We bundled a custom, responsive HTML course page (`assets/course_content.html`) and implemented string-loading fallbacks to guarantee offline compatibility and prevent asset-linking failures on Android.
-4.  **Resilient Networking:** Implemented a fetch wrapper with:
-    *   Request timeout (10 seconds limit).
-    *   Automatic retry logic (up to 3 attempts with exponential backoff on 5xx or network errors).
-    *   Intercepts requests to append the authorization header and handles token refreshing if a `401 Unauthorized` is returned.
+Below is the layout map of the primary screens. Replace these paths with actual screenshots of your device or emulator to visually document the application:
+
+| 🔐 Login & Signup | 📚 Course Catalog (Home) | 📖 Course Details |
+| :---: | :---: | :---: |
+| ![Login Screen](./assets/images/logo-glow.png) <br> *Auth Flow* | ![Catalog Listing](./assets/images/icon.png) <br> *Dynamic Recycled List* | ![Details Screen](./assets/images/react-logo.png) <br> *Enroll & Details View* |
+
+| 🌐 Embedded Content Player | 👤 User Profile Dashboard | 📡 Offline Connectivity |
+| :---: | :---: | :---: |
+| ![WebView Player](./assets/images/tutorial-web.png) <br> *WebView with Header Auth* | ![Profile Page](./assets/images/tabIcons/profile@3x.png) <br> *Avatar Picker & Statistics* | ![Offline Banner](./assets/images/android-icon-monochrome.png) <br> *Network Interceptor Status* |
 
 ---
 
-## 📦 Installation & Setup
+## 🛠️ Key Architectural Decisions
+
+### 1. Robust Network Layer & Resilient API Client (`src/api/client.ts`)
+The app utilizes a centralized, custom fetch client designed to handle standard mobile connectivity issues:
+* **Request Timeouts:** All network requests are controlled via an `AbortController`. If a request takes longer than `TIMEOUT_MS` (default 10s), the controller halts the execution and returns a descriptive `408 Request Timeout` error.
+* **Automatic Retry with Exponential Backoff:** If a request encounters a network dropout (status code `0`, `TypeError`) or server-side failure (`5xx`), it executes a retry loop up to 3 times. The backoff delay escalates exponentially:
+  $$\text{Delay} = 2^{\text{attempt}} \times 1000\text{ ms}$$
+* **Atomic Token Refresh & Queue Interception:** When an API request fails with a `401 Unauthorized`:
+  1. The client intercepts the failure and holds additional outgoing requests in a queue (`refreshSubscribers`).
+  2. It triggers a token refresh using the stored refresh token at `/users/refresh-token`.
+  3. Once new tokens are retrieved and written, it updates all queued requests with the new `Authorization` headers and executes them atomically.
+
+### 2. Recycled List Performance (`src/app/(tabs)/index.tsx`)
+Rather than relying on `FlatList` (which instantiates and retains off-screen elements in memory, causing frames to drop), the catalog utilizes `@legendapp/list/react-native` (`LegendList`):
+* **Recycling mechanism:** Reuses cell views offscreen, reducing memory allocations on deep lists.
+* **Estimated Sizes:** Utilizes `estimatedItemSize={300}` to drastically speed up list render calculations.
+* **Component Memoization:** The individual `CourseCard` items are wrapped in a optimized `React.memo` with a custom props comparator that prevents a card from re-rendering unless its specific ID, title, thumbnail, or bookmark state changes.
+
+### 3. Local HTML Hybrid WebView (`src/app/webview.tsx`)
+To load course contents securely:
+* **Token Headers Injection:** Intercepts load requests to pass dynamic `Authorization` and `X-Course-Id` headers directly into the WebView session, preventing content access if the user's session has expired.
+* **Dual Asset Loading:** Tries to read the pre-packaged `assets/course_content.html` file. If the local file reads fail (e.g. Metro bundler HTTP URL restrictions on emulators), it dynamically falls back to an offline-safe inline `FALLBACK_HTML` string.
+* **Bidirectional Message Bridge:** WebView code posts JSON string messages back to the native environment (e.g. sending `{ type: 'COURSE_COMPLETED' }` when the user marks the module done). Native app parses this in the `onMessage` handler and updates the database context.
+
+### 4. Hybrid Offline Storage & Cache Syncing
+* **Secured Storage:** High-sensitivity session keys (`access_token`, `refresh_token`) are locked in the device keychain via **Expo SecureStore**.
+* **Async Cache:** Heavy list metadata (bookmark lists, enrolled lists, course catalogs) are cached in **React Native AsyncStorage**. On boot, cached files load immediately to provide offline usability, while remote API fetches sync details in the background.
+
+---
+
+## ⚙️ Environment Variables
+
+The API client connects to the default testing endpoint: `https://api.freeapi.app/api/v1`.
+
+To customize the backend endpoint, you can define public environment variables which are automatically read by Expo:
+
+1. Create a `.env` file in the root directory:
+   ```bash
+   touch .env
+   ```
+
+2. Add your custom backend API URL (prefix with `EXPO_PUBLIC_` so it's readable by the client-side JavaScript bundle):
+   ```env
+   EXPO_PUBLIC_API_URL=https://your-custom-backend.com/api/v1
+   ```
+
+3. Start the bundler (`npm start`). The API client in [client.ts](file:///Users/piyushvarshney/Desktop/House_of_EdTech_Task/src/api/client.ts) will automatically intercept and run against this custom URL.
+
+---
+
+## 📦 Setup & Installation Guide
 
 ### Prerequisites
-*   Node.js (v18+)
-*   Expo CLI (`npm install -g expo-cli`)
-*   Expo Go app (for testing on real devices) or Xcode/Android Studio simulators.
+* **Node.js** (v18.0.0 or higher)
+* **npm** (v9+) or **yarn** (v1.22+)
+* **Android SDK & Emulator** (Android Studio) OR **Xcode Simulator** (macOS only)
 
-### Installation
-1.  Clone the repository:
-    ```bash
-    git clone <repository-url>
-    cd House_Of_EdTech_Task
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Start the development server:
-    ```bash
-    npx expo start
-    ```
-4.  Press `a` for Android Emulator, `i` for iOS Simulator, or scan the QR code using the Expo Go app on a physical device.
+### Step-by-Step Installation
 
----
+1. **Clone the Repository:**
+   ```bash
+   git clone <repository-url>
+   cd House_of_EdTech_Task
+   ```
 
-## 📱 Building the APK (Android)
+2. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
 
-To compile a development build or production APK for Android, we use **EAS Build**:
+3. **Verify/Install Expo Globals:**
+   ```bash
+   npm install -g expo-cli eas-cli
+   ```
 
-### 1. Install EAS CLI
-```bash
-npm install -g eas-cli
-```
+### Running the App Locally
 
-### 2. Log in to Expo Account
-```bash
-eas login
-```
+* **Standard Expo Go Execution:**
+  To launch the app using the standard Expo Go client:
+  ```bash
+  npx expo start
+  ```
+  * Press `a` to open on the Android Emulator.
+  * Press `i` to open on the iOS Simulator.
+  * Scan the QR code with your mobile camera to test on physical devices.
 
-### 3. Initialize EAS Configuration
-```bash
-eas build:configure
-```
+* **Development Build Execution (Required for Notifications):**
+  If you want to compile and build a native developer binary (needed for native features like local notifications):
+  ```bash
+  # Android Development Build
+  npx expo run:android
 
-### 4. Build the APK (Android)
-To run a remote build and generate an installable APK file:
-```bash
-eas build --platform android --profile preview
-```
-*Note: Make sure your `eas.json` is configured to build an APK (set `buildType` to `"apk"` in your preview profile).*
+  # iOS Development Build
+  npx expo run:ios
+  ```
+  This generates the native `android` and `ios` folders and runs a custom client application instead of Expo Go.
 
 ---
 
-## 🗂️ Project Structure
+## ⚠️ Known Issues & Limitations
 
-```
-├── assets/                     # Graphic assets, splash screen, and tab icons
-│   └── course_content.html     # Local WebView HTML template
-├── src/
-│   ├── api/
-│   │   └── client.ts           # Fetch API client (retries, timeouts, intercepts)
-│   ├── app/                    # File-based routing (Expo Router)
-│   │   ├── _layout.tsx         # Root layout & providers
-│   │   ├── index.tsx           # Catalog (Home Tab)
-│   │   ├── explore.tsx         # Bookmarks (Explore Tab)
-│   │   ├── profile.tsx         # User Profile (Profile Tab)
-│   │   ├── login.tsx           # Login Form
-│   │   ├── register.tsx        # Register Form
-│   │   ├── course/
-│   │   │   └── [id].tsx        # Course Details Screen
-│   │   └── webview.tsx         # WebView Viewer
-│   ├── components/             # Reusable UI components
-│   │   ├── CourseCard.tsx      # Optimized, memoized Course Card
-│   │   ├── OfflineBanner.tsx   # Custom animated Network Banner
-│   │   └── app-tabs.tsx        # Custom Native Router tab configuration
-│   ├── constants/
-│   │   └── theme.ts            # Palette styling & colors
-│   ├── context/
-│   │   ├── AuthContext.tsx     # Authentication state provider
-│   │   └── CourseContext.tsx   # Courses catalog & bookmark provider
-│   └── hooks/
-│       └── useNotifications.ts # Local push notifications scheduling hook
-├── metro.config.js             # Metro configuration for NativeWind
-└── postcss.config.mjs          # PostCSS configuration for Tailwind v4
-```
+### 1. Notifications Restricted on Expo Go (SDK 53+)
+* **Issue:** Starting with Expo SDK 53, the push/local notification native libraries were removed from the **Expo Go** application to minimize size. Trying to initialize `expo-notifications` on Expo Go causes a crash or hard warnings.
+* **Limitation:** In the code, notifications are guarded using `Constants.appOwnership !== 'expo'`. This means notifications are inactive when testing inside Expo Go.
+* **Testing Workaround:** You must generate a custom Development Build (using `npx expo run:android` or `npx expo run:ios`) to test notifications and see the permission dialog.
+
+### 2. FreeAPI Database Purges (Auto-Logout Behavior)
+* **Issue:** The public sandbox API (`freeapi.app`) is transient and automatically resets its mock databases periodically.
+* **Limitation:** When this reset occurs, the user account is purged on the server side. As a result, the saved local `refresh_token` becomes invalid, leading to a `401` on startup, which triggers the logout sequence. This is expected security behavior.
+
+### 3. Android WebView Development URL Resolving
+* **Issue:** On the Android Emulator, Metro bundler resolves local assets as remote HTTP URLs (e.g. `http://10.0.2.2:8081/...`). Expo's `FileSystem.readAsStringAsync()` throws an error when trying to read HTTP addresses.
+* **Resolution:** The WebView component contains a check that detects `http`/`https` asset paths and fetches them via a standard network call, ensuring the HTML viewer works on emulators without manual configuration.

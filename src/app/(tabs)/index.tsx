@@ -2,13 +2,14 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LegendList } from '@legendapp/list/react-native';
+import { Image } from 'expo-image';
 import { Search, BookOpen, AlertCircle } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses, Course } from '../../context/CourseContext';
 import { CourseCard } from '../../components/CourseCard';
 import { Colors } from '../../constants/theme';
 import { useColorScheme } from 'react-native';
-
+  
 export default function HomeScreen() {
   const { user } = useAuth();
   const { courses, bookmarks, toggleBookmark, isLoading, isRefreshing, error, fetchCourses } = useCourses();
@@ -51,19 +52,33 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.content}>
-        {/* Welcome Section */}
-        <View style={styles.header}>
-          <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>
-            Welcome back,
-          </Text>
-          <Text style={[styles.nameText, { color: colors.text }]}>
-            {user?.username || 'Learner'} 👋
-          </Text>
+        {/* Welcome Header Section with User Avatar */}
+        <View style={styles.headerRow}>
+          <View style={styles.welcomeInfo}>
+            <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>
+              Welcome back,
+            </Text>
+            <Text style={[styles.nameText, { color: colors.text }]}>
+              {user?.username || 'Learner'} 👋
+            </Text>
+          </View>
+          <Image
+            source={{ uri: user?.avatar?.url || 'https://randomuser.me/api/portraits/men/32.jpg' }}
+            style={styles.userAvatar}
+            contentFit="cover"
+            transition={200}
+          />
         </View>
 
-        {/* Search Bar */}
-        <View style={[styles.searchContainer, { backgroundColor: colors.backgroundElement }]}>
-          <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
+        {/* Search Bar with drop-shadow and modern layout */}
+        <View style={[
+          styles.searchContainer, 
+          { 
+            backgroundColor: colors.backgroundElement,
+            borderColor: isDark ? '#2e3135' : '#f1f5f9' 
+          }
+        ]}>
+          <Search size={18} color={colors.textSecondary} style={styles.searchIcon} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
             placeholder="Search courses..."
@@ -132,33 +147,56 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    gap: 16,
+    gap: 20,
   },
-  header: {
-    marginTop: 8,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  welcomeInfo: {
+    flex: 1,
   },
   welcomeText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   nameText: {
     fontSize: 26,
     fontWeight: '800',
     letterSpacing: -0.5,
+    marginTop: 2,
+  },
+  userAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#cbd5e1',
+    borderWidth: 1.5,
+    borderColor: '#208AEF',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
+    height: 42,
     borderRadius: 16,
     paddingHorizontal: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    elevation: 1,
   },
   searchIcon: {
-    marginRight: 12,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     height: '100%',
   },
   errorBanner: {

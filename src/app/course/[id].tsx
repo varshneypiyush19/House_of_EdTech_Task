@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useColorScheme, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCourses } from '../../context/CourseContext';
 import { Colors } from '../../constants/theme';
-import { ArrowLeft, Star, Bookmark, Calendar, Globe, Mail, Share2, Play } from 'lucide-react-native';
+import { ArrowLeft, Star, Bookmark, Calendar, Globe, Mail, Share2, Play, BookOpen } from 'lucide-react-native';
 
 export default function CourseDetailsScreen() {
   const { id } = useLocalSearchParams();
@@ -17,6 +17,7 @@ export default function CourseDetailsScreen() {
 
   const courseId = Number(id);
   const course = courses.find((c) => c.id === courseId);
+  const [imageError, setImageError] = useState(!course?.thumbnail);
 
   if (!course) {
     return (
@@ -92,8 +93,22 @@ export default function CourseDetailsScreen() {
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Cover Thumbnail */}
-        <Image source={{ uri: course.thumbnail }} style={styles.coverImage} contentFit="cover" />
+        {/* Cover Thumbnail with Fallback Check */}
+        {!imageError ? (
+          <Image
+            source={{ uri: course.thumbnail }}
+            style={styles.coverImage}
+            contentFit="cover"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <View style={[styles.coverFallback, { backgroundColor: colors.backgroundElement }]}>
+            <BookOpen size={48} color="#208AEF" />
+            <Text style={[styles.coverFallbackText, { color: colors.textSecondary }]}>
+              {course.title ? course.title.substring(0, 2).toUpperCase() : 'ED'}
+            </Text>
+          </View>
+        )}
 
         {/* Content Body */}
         <View style={styles.body}>
@@ -251,12 +266,24 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 280,
   },
+  coverFallback: {
+    width: '100%',
+    height: 280,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  coverFallbackText: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
   body: {
     padding: 24,
     gap: 20,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    marginTop: -32,
+    marginTop: -15,
     backgroundColor: 'transparent',
   },
   metaRow: {

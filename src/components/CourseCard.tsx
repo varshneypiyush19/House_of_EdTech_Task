@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Star, Bookmark } from 'lucide-react-native';
+import { Star, Bookmark, BookOpen } from 'lucide-react-native';
 import { Course } from '../context/CourseContext';
 import { Colors } from '../constants/theme';
 import { useColorScheme } from 'react-native';
@@ -18,6 +18,7 @@ export const CourseCard = React.memo(
     const router = useRouter();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const [imageError, setImageError] = useState(!course.thumbnail);
 
     const handlePress = () => {
       // Navigate to course details using router push
@@ -30,30 +31,44 @@ export const CourseCard = React.memo(
       <TouchableOpacity
         style={[styles.card, { backgroundColor: colors.backgroundElement }]}
         onPress={handlePress}
-        activeOpacity={0.8}
+        activeOpacity={0.9}
       >
-        {/* Thumbnail Image */}
-        <Image
-          source={{ uri: course.thumbnail }}
-          style={styles.thumbnail}
-          contentFit="cover"
-          transition={200}
-        />
+        {/* Thumbnail Image Container with Absolute-positioned Rating Badge */}
+        <View style={[styles.thumbnailContainer, { backgroundColor: isDark ? '#1e293b' : '#eff6ff' }]}>
+          {!imageError ? (
+            <Image
+              source={{ uri: course.thumbnail }}
+              style={styles.thumbnail}
+              contentFit="cover"
+              transition={300}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <View style={styles.fallbackContainer}>
+              <BookOpen size={36} color="#208AEF" />
+              <Text style={[styles.fallbackText, { color: colors.textSecondary }]}>
+                {course.title ? course.title.substring(0, 2).toUpperCase() : 'ED'}
+              </Text>
+            </View>
+          )}
+          {/* Floating Rating Badge */}
+          <View style={styles.floatingRating}>
+            <Star size={12} color="#eab308" fill="#eab308" />
+            <Text style={styles.ratingText}>
+              {course.rating.toFixed(1)}
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.content}>
-          {/* Category Badge & Rating */}
-          <View style={styles.metaRow}>
-            <View style={[styles.categoryBadge, { backgroundColor: isDark ? '#1e293b' : '#f1f5f9' }]}>
-              <Text style={[styles.categoryText, { color: colors.textSecondary }]}>
-                {course.category.replace('-', ' ')}
-              </Text>
-            </View>
-            <View style={styles.ratingRow}>
-              <Star size={14} color="#eab308" fill="#eab308" />
-              <Text style={[styles.ratingText, { color: colors.text }]}>
-                {course.rating.toFixed(1)}
-              </Text>
-            </View>
+          {/* Category Badge */}
+          <View style={[
+            styles.categoryBadge, 
+            { backgroundColor: isDark ? 'rgba(32, 138, 239, 0.15)' : 'rgba(32, 138, 239, 0.08)' }
+          ]}>
+            <Text style={styles.categoryText}>
+              {course.category.replace('-', ' ')}
+            </Text>
           </View>
 
           {/* Title and Description */}
@@ -64,6 +79,9 @@ export const CourseCard = React.memo(
             {course.description}
           </Text>
 
+          {/* Thin layout divider line */}
+          <View style={[styles.divider, { backgroundColor: isDark ? '#2e3135' : '#f1f5f9' }]} />
+
           {/* Instructor & Action Row */}
           <View style={styles.footerRow}>
             <View style={styles.instructorInfo}>
@@ -72,7 +90,7 @@ export const CourseCard = React.memo(
                 style={styles.instructorAvatar}
                 contentFit="cover"
               />
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={[styles.instructorName, { color: colors.text }]} numberOfLines={1}>
                   {course.instructor.name.first} {course.instructor.name.last}
                 </Text>
@@ -84,7 +102,7 @@ export const CourseCard = React.memo(
 
             {/* Price & Bookmark Action */}
             <View style={styles.actionSection}>
-              <Text style={[styles.price, { color: '#208AEF' }]}>
+              <Text style={styles.price}>
                 ${course.price}
               </Text>
               
@@ -98,8 +116,8 @@ export const CourseCard = React.memo(
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <Bookmark
-                  size={18}
-                  color={isBookmarked ? '#fff' : '#64748b'}
+                  size={16}
+                  color={isBookmarked ? '#fff' : colors.textSecondary}
                   fill={isBookmarked ? '#fff' : 'none'}
                 />
               </TouchableOpacity>
@@ -122,46 +140,74 @@ export const CourseCard = React.memo(
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+  },
+  thumbnailContainer: {
+    width: '100%',
+    height: 180,
+    position: 'relative',
+    overflow: 'hidden',
   },
   thumbnail: {
     width: '100%',
-    height: 160,
+    height: '100%',
   },
-  content: {
-    padding: 16,
-    gap: 10,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  fallbackContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(32, 138, 239, 0.05)',
+    gap: 6,
   },
-  categoryBadge: {
+  fallbackText: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+  floatingRating: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
-  },
-  categoryText: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderRadius: 12,
     gap: 4,
   },
   ratingText: {
-    fontSize: 13,
+    color: '#fff',
+    fontSize: 12,
     fontWeight: '700',
+  },
+  content: {
+    padding: 16,
+    gap: 8,
+  },
+  categoryBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#208AEF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   title: {
     fontSize: 18,
@@ -172,25 +218,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  divider: {
+    height: 1,
+    marginVertical: 4,
+  },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
-    paddingTop: 12,
-    marginTop: 4,
   },
   instructorInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    flex: 1,
+    flex: 0.65,
   },
   instructorAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#cbd5e1',
   },
   instructorName: {
     fontSize: 13,
@@ -198,6 +245,7 @@ const styles = StyleSheet.create({
   },
   instructorRole: {
     fontSize: 11,
+    marginTop: 1,
   },
   actionSection: {
     flexDirection: 'row',
@@ -205,8 +253,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   price: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
+    color: '#208AEF',
   },
   bookmarkButton: {
     width: 36,
@@ -215,7 +264,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderColor: 'rgba(0,0,0,0.03)',
   },
   bookmarkActive: {
     backgroundColor: '#208AEF',

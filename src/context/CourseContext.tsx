@@ -5,11 +5,15 @@ import { Platform } from 'react-native';
 import { apiRequest } from '../api/client';
 
 let Notifications: any = null;
-if (Constants.appOwnership !== 'expo') {
-  try {
-    Notifications = require('expo-notifications');
-  } catch (e) {
-    console.warn('Failed to load expo-notifications:', e);
+if (Platform.OS !== 'web') {
+  if (Constants.appOwnership === 'expo') {
+    console.log('NOTE: Notifications are disabled in Expo Go (removed in SDK 53+). Create a Development Build to test notification features.');
+  } else {
+    try {
+      Notifications = require('expo-notifications');
+    } catch (e) {
+      console.warn('Failed to load expo-notifications:', e);
+    }
   }
 }
 
@@ -60,12 +64,23 @@ interface CourseContextType {
 }
 
 function rewriteDummyJsonUrl(url: string, category: string, title: string): string {
-  if (url && url.includes('dummyjson.com')) {
-    if (url.includes('product-images/') || url.includes('data/products/')) {
+  if (!url) return '';
+  
+  // 1. Force HTTPS to bypass Android cleartext traffic restrictions
+  if (url.startsWith('http://')) {
+    url = url.replace('http://', 'https://');
+  }
+
+  // 2. Only rewrite old/broken legacy URLs (like i.dummyjson.com or data/products)
+  if (url.includes('i.dummyjson.com') || url.includes('product-images/') || url.includes('data/products/')) {
+    try {
       const titleEncoded = encodeURIComponent(title);
       const match = url.match(/\/([^\/]+)\.(jpg|png|jpeg|webp)$/i);
       const filename = match ? match[1] : 'thumbnail';
-      return `https://cdn.dummyjson.com/products/images/${category}/${titleEncoded}/${filename}.png`;
+      const extension = match ? match[2] : 'png';
+      return `https://cdn.dummyjson.com/products/images/${category}/${titleEncoded}/${filename}.${extension}`;
+    } catch (e) {
+      return url;
     }
   }
   return url;

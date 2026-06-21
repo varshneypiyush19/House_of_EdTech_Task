@@ -3,11 +3,15 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 let Notifications: any = null;
-if (Constants.appOwnership !== 'expo') {
-  try {
-    Notifications = require('expo-notifications');
-  } catch (e) {
-    console.warn('Failed to load expo-notifications:', e);
+if (Platform.OS !== 'web') {
+  if (Constants.appOwnership === 'expo') {
+    console.log('NOTE: Notifications are disabled in Expo Go (removed in SDK 53+). Create a Development Build to test notification features.');
+  } else {
+    try {
+      Notifications = require('expo-notifications');
+    } catch (e) {
+      console.warn('Failed to load expo-notifications:', e);
+    }
   }
 }
 
