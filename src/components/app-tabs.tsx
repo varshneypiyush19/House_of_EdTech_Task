@@ -12,34 +12,26 @@ export default function AppTabs() {
     <NativeTabs
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundElement}
+      iconColor={{ default: colors.textSecondary, selected: '#208AEF' }}
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={{
-            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="home-outline" />,
-            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="home" />,
-          }}
+          src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="home" />}
         />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="explore">
         <NativeTabs.Trigger.Label>Bookmarks</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={{
-            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="bookmark-outline" />,
-            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="bookmark" />,
-          }}
+          src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="bookmark" />}
         />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profile">
         <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={{
-            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="person-outline" />,
-            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="person" />,
-          }}
+          src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="person" />}
         />
       </NativeTabs.Trigger>
     </NativeTabs>

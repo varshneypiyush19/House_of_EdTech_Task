@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LegendList } from '@legendapp/list/react-native';
 import { Search, Bookmark } from 'lucide-react-native';
 import { useCourses, Course } from '../../context/CourseContext';
 import { CourseCard } from '../../components/CourseCard';
-import { Colors } from '../../constants/theme';
+import { Colors, BottomTabInset } from '../../constants/theme';
 import { useColorScheme } from 'react-native';
 
 export default function BookmarksScreen() {
@@ -48,7 +48,7 @@ export default function BookmarksScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingBottom: BottomTabInset }]}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>

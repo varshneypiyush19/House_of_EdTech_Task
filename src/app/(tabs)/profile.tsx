@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, useColorScheme, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
-import { Colors } from '../../constants/theme';
+import { Colors, BottomTabInset } from '../../constants/theme';
 import { LogOut, Camera, ChevronRight, User as UserIcon, Settings, Bell, Shield, Award, AwardIcon, Compass, BookOpen } from 'lucide-react-native';
 
 export default function ProfileScreen() {
@@ -111,14 +111,14 @@ export default function ProfileScreen() {
   if (!user) return null;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingBottom: BottomTabInset }]}>
       {/* Decorative Header Banner */}
       <View style={styles.topBanner}>
         <View style={styles.bannerGlow} />
         <Text style={styles.bannerQuote}>Keep reaching for your learning goals!</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 }]} showsVerticalScrollIndicator={false}>
         {/* Profile Details Overlay Card */}
         <View style={[styles.profileCard, { backgroundColor: colors.backgroundElement, borderColor: isDark ? '#2e3135' : '#f1f5f9' }]}>
           <View style={styles.avatarRow}>
@@ -258,7 +258,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Preferences Menu */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={[styles.sectionHeading, { color: colors.textSecondary }]}>Preferences</Text>
           <View style={[styles.menuList, { backgroundColor: colors.backgroundElement }]}>
             <TouchableOpacity style={[styles.menuItem, { borderBottomColor: isDark ? '#2d3748' : '#f1f5f9' }]}>
@@ -285,7 +285,7 @@ export default function ProfileScreen() {
               <ChevronRight size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
-        </View>
+        </View> */}
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   statsDivider: {
     height: 1,
-    marginVertical: 18,
+    marginVertical: 8,
   },
   statsRow: {
     flexDirection: 'row',
