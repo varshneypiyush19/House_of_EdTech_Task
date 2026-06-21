@@ -160,9 +160,9 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
           seconds: 24 * 3600, // 24 hours
         },
       });
-      console.log('24h reminder scheduled successfully');
+      // 24h reminder scheduled successfully
     } catch (err) {
-      console.log('Failed to schedule 24h reminder', err);
+      // Failed to schedule 24h reminder
     }
   }, []);
 

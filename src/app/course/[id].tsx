@@ -55,7 +55,7 @@ export default function CourseDetailsScreen() {
         message: `Check out this course: ${course.title}\nInstructed by: ${course.instructor.name.first} ${course.instructor.name.last}`,
       });
     } catch (error) {
-      console.log('Error sharing', error);
+      // Error sharing
     }
   };
 
@@ -186,7 +186,7 @@ export default function CourseDetailsScreen() {
             </View>
           </View>
         </View>
-      </ScrollView>
+      </ScrollView> 
 
       {/* Floating Action Button Footer */}
       <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: isDark ? '#222' : '#f1f5f9' }]}>

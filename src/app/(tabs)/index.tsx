@@ -3,7 +3,7 @@ import { View, Text, TextInput, StyleSheet, ActivityIndicator, RefreshControl } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LegendList } from '@legendapp/list/react-native';
 import { Image } from 'expo-image';
-import { Search, BookOpen, AlertCircle } from 'lucide-react-native';
+import { Search, BookOpen, AlertCircle, User as UserIcon } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses, Course } from '../../context/CourseContext';
 import { CourseCard } from '../../components/CourseCard';
@@ -17,6 +17,7 @@ export default function HomeScreen() {
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [avatarError, setAvatarError] = useState(false);
 
   // Filtering courses based on search query
   const filteredCourses = useMemo(() => {
@@ -62,12 +63,19 @@ export default function HomeScreen() {
               {user?.username || 'Learner'} 👋
             </Text>
           </View>
-          <Image
-            source={{ uri: user?.avatar?.url || 'https://randomuser.me/api/portraits/men/32.jpg' }}
-            style={styles.userAvatar}
-            contentFit="cover"
-            transition={200}
-          />
+          {!avatarError ? (
+            <Image
+              source={{ uri: user?.avatar?.url || 'https://randomuser.me/api/portraits/men/32.jpg' }}
+              style={styles.userAvatar}
+              contentFit="cover"
+              transition={200}
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <View style={[styles.userAvatarPlaceholder, { backgroundColor: isDark ? '#1e293b' : '#eff6ff' }]}>
+              <UserIcon size={20} color="#208AEF" />
+            </View>
+          )}
         </View>
 
         {/* Search Bar with drop-shadow and modern layout */}
@@ -177,6 +185,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#cbd5e1',
     borderWidth: 1.5,
     borderColor: '#208AEF',
+  },
+  userAvatarPlaceholder: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1.5,
+    borderColor: '#208AEF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   searchContainer: {
     flexDirection: 'row',

@@ -43,7 +43,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(userData);
         }
       } catch (err) {
-        console.log('Auto-login token validation failed. Clearing tokens.', err);
         await clearTokens();
         setUser(null);
       } finally {
@@ -105,9 +104,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setIsLoading(true);
     try {
-      await apiRequest('/users/logout', { method: 'POST' });
-    } catch (err) {
-      console.warn('Network request for logout failed, clearing tokens locally.', err);
+      await apiRequest('/users/logout', { method: 'POST', skipRefresh: true });
+    } catch (err: any) {
+      if (err.statusCode !== 401) {
+        throw err;
+      }
     } finally {
       await clearTokens();
       setUser(null);
@@ -136,7 +137,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(updatedUser);
     } catch (err) {
-      console.error('Failed to upload avatar', err);
       throw err;
     }
   };
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData = await apiRequest<User>('/users/current-user', { method: 'GET' });
       setUser(userData);
     } catch (err) {
-      console.error('Failed to refresh profile', err);
+      // Failed to refresh profile
     }
   };
 

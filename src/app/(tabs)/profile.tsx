@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, useColorScheme } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
 import { Colors } from '../../constants/theme';
-import { LogOut, Camera, ChevronRight, User as UserIcon, Settings, Bell, Shield, Award, AwardIcon, Compass } from 'lucide-react-native';
+import { LogOut, Camera, ChevronRight, User as UserIcon, Settings, Bell, Shield, Award, AwardIcon, Compass, BookOpen } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const { user, logout, updateAvatar } = useAuth();
@@ -16,6 +16,13 @@ export default function ProfileScreen() {
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   
   const [uploading, setUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+  const [courseImageErrors, setCourseImageErrors] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user?.avatar?.url]);
+
 
   // Map enrolled course IDs to actual course objects
   const activeCourses = useMemo(() => {
@@ -71,7 +78,16 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: () => logout() },
+      { 
+        text: 'Log Out', 
+        style: 'destructive', 
+        onPress: async () => {
+          try {
+            await logout();
+          } catch (err: any) {
+          }
+        } 
+      },
     ]);
   };
 
@@ -107,7 +123,21 @@ export default function ProfileScreen() {
         <View style={[styles.profileCard, { backgroundColor: colors.backgroundElement, borderColor: isDark ? '#2e3135' : '#f1f5f9' }]}>
           <View style={styles.avatarRow}>
             <TouchableOpacity onPress={handlePickImage} disabled={uploading} style={styles.avatarWrapper}>
-              <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" />
+              {!avatarError ? (
+                <Image 
+                  source={{ uri: avatarUrl }} 
+                  style={styles.avatar} 
+                  contentFit="cover" 
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <View style={[styles.avatarPlaceholder, { backgroundColor: isDark ? '#1e293b' : '#eff6ff' }]}>
+                  <UserIcon size={32} color="#208AEF" />
+                  <Text style={styles.avatarPlaceholderText}>
+                    {user.username ? user.username.substring(0, 2).toUpperCase() : 'US'}
+                  </Text>
+                </View>
+              )}
               {uploading ? (
                 <View style={styles.uploadLoader}>
                   <ActivityIndicator color="#fff" size="small" />
@@ -118,6 +148,7 @@ export default function ProfileScreen() {
                 </View>
               )}
             </TouchableOpacity>
+
 
             <View style={styles.userInfo}>
               <Text style={[styles.username, { color: colors.text }]} numberOfLines={1}>
@@ -183,8 +214,25 @@ export default function ProfileScreen() {
                   onPress={() => router.push(`/course/${course.id}`)}
                   activeOpacity={0.8}
                 >
-                  <Image source={{ uri: course.thumbnail }} style={styles.courseMiniThumb} />
+                  {!courseImageErrors[course.id] ? (
+                    <Image 
+                      source={{ uri: course.thumbnail }} 
+                      style={styles.courseMiniThumb} 
+                      contentFit="cover"
+                      onError={() => {
+                        setCourseImageErrors(prev => ({ ...prev, [course.id]: true }));
+                      }}
+                    />
+                  ) : (
+                    <View style={[styles.courseMiniThumbFallback, { backgroundColor: isDark ? '#1e293b' : '#eff6ff' }]}>
+                      <BookOpen size={20} color="#208AEF" />
+                      <Text style={styles.miniFallbackText}>
+                        {course.title ? course.title.substring(0, 2).toUpperCase() : 'ED'}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.progressDetail}>
+
                     <Text style={[styles.courseTitle, { color: colors.text }]} numberOfLines={1}>
                       {course.title}
                     </Text>
@@ -318,8 +366,32 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#208AEF',
+  },
+  avatarPlaceholderText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#208AEF',
+    marginTop: 2,
+  },
+  courseMiniThumbFallback: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#208AEF',
+  },
+  miniFallbackText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#208AEF',
+    marginTop: 1,
   },
   uploadLoader: {
+
     position: 'absolute',
     top: 0,
     left: 0,

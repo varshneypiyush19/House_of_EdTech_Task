@@ -119,6 +119,7 @@ interface XhrResponse {
   };
   ok: boolean;
   json: () => Promise<any>;
+  text: () => Promise<string>;
 }
 
 function xhrFetch(url: string, options: any): Promise<XhrResponse> {
@@ -163,6 +164,9 @@ function xhrFetch(url: string, options: any): Promise<XhrResponse> {
         json: async () => {
           return JSON.parse(xhr.responseText);
         },
+        text: async () => {
+          return xhr.responseText;
+        },
       };
       resolve(responseObj);
     };
@@ -182,10 +186,11 @@ function xhrFetch(url: string, options: any): Promise<XhrResponse> {
 interface RequestOptions extends RequestInit {
   timeout?: number;
   skipAuth?: boolean;
+  skipRefresh?: boolean;
 }
 
 export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { timeout = TIMEOUT_MS, skipAuth = false, ...fetchOptions } = options;
+  const { timeout = TIMEOUT_MS, skipAuth = false, skipRefresh = false, ...fetchOptions } = options;
 
   // 1. Check network connection first
   const netState = await NetInfo.fetch();
@@ -231,7 +236,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       clearTimeout(id);
 
       // Handle 401 Unauthorized (attempt token refresh)
-      if (response.status === 401 && !skipAuth) {
+      if (response.status === 401 && !skipAuth && !skipRefresh) {
         const refreshToken = await getRefreshToken();
         if (refreshToken) {
           if (!isRefreshing) {
@@ -265,10 +270,30 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
           const isRetryJson = retryContentType.includes('application/json');
 
           if (!retryResponse.ok) {
-            let errMessage = 'Request failed after token refresh';
+            let errMessage = `Request failed after token refresh: ${retryResponse.status}`;
             if (isRetryJson) {
-              const errJson = await retryResponse.json().catch(() => ({}));
-              errMessage = errJson.message || errMessage;
+              try {
+                const errText = await retryResponse.text();
+                const errJson = JSON.parse(errText);
+                if (Array.isArray(errJson.errors) && errJson.errors.length > 0) {
+                  const details = errJson.errors.map((e: any) => e.message || e.msg || JSON.stringify(e)).join(', ');
+                  errMessage = `${errJson.message || 'Validation error'}: ${details}`;
+                } else {
+                  errMessage = errJson.message || errMessage;
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            } else {
+              try {
+                const errText = await retryResponse.text();
+                if (errText && errText.trim().length > 0) {
+                  const cleanText = errText.replace(/<[^>]*>/g, '').trim().substring(0, 100);
+                  errMessage = `Server error (${retryResponse.status}): ${cleanText}`;
+                }
+              } catch {
+                // Ignore text read errors
+              }
             }
             throw new ApiError(errMessage, retryResponse.status);
           }
@@ -286,10 +311,30 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
       const isJson = contentType.includes('application/json');
 
       if (!response.ok) {
-        let errMessage = 'HTTP error occurred';
+        let errMessage = `HTTP error occurred: ${response.status}`;
         if (isJson) {
-          const errJson = await response.json().catch(() => ({}));
-          errMessage = errJson.message || errMessage;
+          try {
+            const errText = await response.text();
+            const errJson = JSON.parse(errText);
+            if (Array.isArray(errJson.errors) && errJson.errors.length > 0) {
+              const details = errJson.errors.map((e: any) => e.message || e.msg || JSON.stringify(e)).join(', ');
+              errMessage = `${errJson.message || 'Validation error'}: ${details}`;
+            } else {
+              errMessage = errJson.message || errMessage;
+            }
+          } catch {
+            // Ignore parse errors on HTTP error responses
+          }
+        } else {
+          try {
+            const errText = await response.text();
+            if (errText && errText.trim().length > 0) {
+              const cleanText = errText.replace(/<[^>]*>/g, '').trim().substring(0, 100);
+              errMessage = `Server error (${response.status}): ${cleanText}`;
+            }
+          } catch {
+            // Ignore text read errors
+          }
         }
         throw new ApiError(errMessage, response.status);
       }
@@ -298,9 +343,22 @@ export async function apiRequest<T>(endpoint: string, options: RequestOptions = 
         throw new ApiError('Server returned an invalid content format (expected JSON).', response.status);
       }
 
-      const json: ApiResponse<T> = await response.json();
-      if (!json.success) {
-        throw new ApiError(json.message || 'API request failed', response.status);
+      let json: ApiResponse<T>;
+      try {
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+          return {} as T;
+        }
+        json = JSON.parse(text);
+      } catch (jsonErr: any) {
+        if (response.ok) {
+          return {} as T;
+        }
+        throw new ApiError(`Failed to parse response: ${jsonErr.message || jsonErr}`, response.status);
+      }
+
+      if (!json || !json.success) {
+        throw new ApiError(json?.message || 'API request failed', response.status);
       }
 
       return json.data;

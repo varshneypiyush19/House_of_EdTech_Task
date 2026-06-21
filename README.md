@@ -6,15 +6,15 @@ A high-performance, resilient, and visually premium Mini Learning Management Sys
 
 ## 📱 App Screens & Navigation Flows
 
-Below is the layout map of the primary screens. Replace these paths with actual screenshots of your device or emulator to visually document the application:
+Below is the layout map of the primary screens showing the premium redesigned UI:
 
-| 🔐 Login & Signup | 📚 Course Catalog (Home) | 📖 Course Details |
-| :---: | :---: | :---: |
-| ![Login Screen](./assets/images/logo-glow.png) <br> *Auth Flow* | ![Catalog Listing](./assets/images/icon.png) <br> *Dynamic Recycled List* | ![Details Screen](./assets/images/react-logo.png) <br> *Enroll & Details View* |
+| 🔐 Login & Signup | 📚 Course Catalog (Home) |
+| :---: | :---: |
+| ![Login Screen](./assets/images/md/login.png) <br> *Auth Flow & Validation* | ![Catalog Listing](./assets/images/md/main.png) <br> *Recycled List with Search* |
 
-| 🌐 Embedded Content Player | 👤 User Profile Dashboard | 📡 Offline Connectivity |
-| :---: | :---: | :---: |
-| ![WebView Player](./assets/images/tutorial-web.png) <br> *WebView with Header Auth* | ![Profile Page](./assets/images/tabIcons/profile@3x.png) <br> *Avatar Picker & Statistics* | ![Offline Banner](./assets/images/android-icon-monochrome.png) <br> *Network Interceptor Status* |
+| 📖 Course Details | 👤 User Profile Dashboard |
+| :---: | :---: |
+| ![Details Screen](./assets/images/md/course_details.png) <br> *Enroll & Details View* | ![Profile Page](./assets/images/md/profile.png) <br> *Avatar Picker & Learning Progress* |
 
 ---
 

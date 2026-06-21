@@ -85,9 +85,9 @@ export function useNotifications() {
           seconds: 24 * 3600, // 24 hours
         },
       });
-      console.log('24h reminder scheduled');
+      // 24h reminder scheduled successfully
     } catch (err) {
-      console.log('Failed to schedule 24h reminder', err);
+      // Failed to schedule 24h reminder
     }
   }, [requestPermissions]);
 
@@ -95,13 +95,13 @@ export function useNotifications() {
     if (Platform.OS === 'web' || !Notifications) return;
     
     // Notification listener for foreground alerts
-    const notificationListener = Notifications.addNotificationReceivedListener((notification: any) => {
-      console.log('Notification received in foreground:', notification);
+    const notificationListener = Notifications.addNotificationReceivedListener(() => {
+      // Handle foreground notification
     });
 
     // Response listener (triggers when user taps notification)
-    const responseListener = Notifications.addNotificationResponseReceivedListener((response: any) => {
-      console.log('Notification clicked:', response);
+    const responseListener = Notifications.addNotificationResponseReceivedListener(() => {
+      // Handle notification click response
     });
 
     return () => {
