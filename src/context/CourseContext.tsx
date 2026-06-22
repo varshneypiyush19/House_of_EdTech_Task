@@ -252,12 +252,18 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
       try {
         const savedBookmarks = await AsyncStorage.getItem(BOOKMARKS_CACHE_KEY);
         if (savedBookmarks) {
-          setBookmarks(JSON.parse(savedBookmarks));
+          const parsed = JSON.parse(savedBookmarks);
+          if (Array.isArray(parsed)) {
+            setBookmarks(parsed.map((id) => Number(id)).filter((id) => !isNaN(id)));
+          }
         }
 
         const savedEnrolled = await AsyncStorage.getItem(ENROLLED_CACHE_KEY);
         if (savedEnrolled) {
-          setEnrolledCourses(JSON.parse(savedEnrolled));
+          const parsed = JSON.parse(savedEnrolled);
+          if (Array.isArray(parsed)) {
+            setEnrolledCourses(parsed.map((id) => Number(id)).filter((id) => !isNaN(id)));
+          }
         }
       } catch (err) {
         console.error('Failed to load user state from cache', err);
@@ -280,12 +286,13 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
   const toggleBookmark = async (courseId: number) => {
     try {
       let updated: number[];
-      const isAlreadyBookmarked = bookmarks.includes(courseId);
+      const numericId = Number(courseId);
+      const isAlreadyBookmarked = bookmarks.some((id) => Number(id) === numericId);
 
       if (isAlreadyBookmarked) {
-        updated = bookmarks.filter((id) => id !== courseId);
+        updated = bookmarks.filter((id) => Number(id) !== numericId);
       } else {
-        updated = [...bookmarks, courseId];
+        updated = [...bookmarks, numericId];
         
         // Trigger notification when user bookmarks 5+ courses
         if (updated.length >= 5 && Notifications) {
@@ -337,8 +344,8 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const isBookmarked = (courseId: number) => bookmarks.includes(courseId);
-  const isEnrolled = (courseId: number) => enrolledCourses.includes(courseId);
+  const isBookmarked = (courseId: number) => bookmarks.some((id) => Number(id) === Number(courseId));
+  const isEnrolled = (courseId: number) => enrolledCourses.some((id) => Number(id) === Number(courseId));
 
   return (
     <CourseContext.Provider

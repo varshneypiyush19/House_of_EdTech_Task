@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LegendList } from '@legendapp/list/react-native';
 import { Search, Bookmark } from 'lucide-react-native';
@@ -9,7 +9,7 @@ import { Colors, BottomTabInset } from '../../constants/theme';
 import { useColorScheme } from 'react-native';
 
 export default function BookmarksScreen() {
-  const { courses, bookmarks, toggleBookmark } = useCourses();
+  const { courses, bookmarks, toggleBookmark, isLoading } = useCourses();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
@@ -17,7 +17,7 @@ export default function BookmarksScreen() {
 
   // Filter courses that are bookmarked
   const bookmarkedCourses = useMemo(() => {
-    return courses.filter((c) => bookmarks.includes(c.id));
+    return courses.filter((c) => bookmarks.some((id) => Number(id) === Number(c.id)));
   }, [courses, bookmarks]);
 
   // Apply search query to bookmarked courses
@@ -31,15 +31,16 @@ export default function BookmarksScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: Course }) => {
+      const isBookmarked = bookmarks.some((id) => Number(id) === Number(item.id));
       return (
         <CourseCard
           course={item}
-          isBookmarked={true}
+          isBookmarked={isBookmarked}
           onToggleBookmark={toggleBookmark}
         />
       );
     },
-    [toggleBookmark]
+    [bookmarks, toggleBookmark]
   );
 
   const keyExtractor = useCallback((item: Course) => item.id.toString(), []);
@@ -75,28 +76,38 @@ export default function BookmarksScreen() {
         )}
 
         {/* LegendList List */}
-        <LegendList
-          data={filteredBookmarks}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          recycleItems={true}
-          contentContainerStyle={styles.listContent}
-          estimatedItemSize={300}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Bookmark size={48} color={colors.textSecondary} style={styles.emptyIcon} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                {bookmarkedCourses.length === 0 ? 'No Bookmarks Yet' : 'No Match Found'}
-              </Text>
-              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                {bookmarkedCourses.length === 0
-                  ? 'Tap the bookmark icon on any course to save it to this list.'
-                  : 'Try searching with different keywords.'}
-              </Text>
-            </View>
-          }
-        />
+        {isLoading ? (
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color="#208AEF" />
+            <Text style={[styles.loaderText, { color: colors.textSecondary }]}>
+              Loading bookmarks...
+            </Text>
+          </View>
+        ) : (
+          <LegendList
+            data={filteredBookmarks}
+            extraData={bookmarks}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            recycleItems={true}
+            contentContainerStyle={styles.listContent}
+            estimatedItemSize={300}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Bookmark size={48} color={colors.textSecondary} style={styles.emptyIcon} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                  {bookmarkedCourses.length === 0 ? 'No Bookmarks Yet' : 'No Match Found'}
+                </Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                  {bookmarkedCourses.length === 0
+                    ? 'Tap the bookmark icon on any course to save it to this list.'
+                    : 'Try searching with different keywords.'}
+                </Text>
+              </View>
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -160,5 +171,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: 32,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loaderText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

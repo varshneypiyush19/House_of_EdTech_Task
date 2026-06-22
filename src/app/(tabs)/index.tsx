@@ -116,6 +116,7 @@ export default function HomeScreen() {
         ) : (
           <LegendList
             data={filteredCourses}
+            extraData={bookmarks}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
             recycleItems={true}
